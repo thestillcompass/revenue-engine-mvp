@@ -4,8 +4,8 @@ import { maturityLabels, pillars, questions } from '@/lib/engine/questions'
 
 const defaultProfile={businessName:'',offer:'',idealCustomer:'',avgValue:100000,monthlyLeads:25,leadSource:'Instagram / Meta',crm:'Zoho CRM',bookingTool:'Calendly',offersCount:0,salesUsers:0,capability:1,bookingComplexity:0}
 
-export function DiagnosticForm(){
- const [answers,setAnswers]=useState<Record<string,number>>({});const [profile,setProfile]=useState<any>(defaultProfile);const [busy,setBusy]=useState(false);const [result,setResult]=useState<any>(null);const answered=Object.keys(answers).length
+export function DiagnosticForm({initialProfile,initialAnswers,initialResult}:{initialProfile?:any,initialAnswers?:Record<string,number>,initialResult?:any}){
+ const [answers,setAnswers]=useState<Record<string,number>>(initialAnswers||{});const [profile,setProfile]=useState<any>(initialProfile||defaultProfile);const [busy,setBusy]=useState(false);const [result,setResult]=useState<any>(initialResult||null);const answered=Object.keys(answers).length
  const groups=useMemo(()=>pillars.map(p=>({...p,qs:questions.filter(q=>q.pillar===p.code)})),[])
  function setP(k:string,v:any){setProfile((x:any)=>({...x,[k]:v}))}
  async function submit(){if(answered<30)return alert('Please score all 30 questions.');setBusy(true);const r=await fetch('/api/diagnostics',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({profile,answers})});const data=await r.json();setBusy(false);if(!r.ok)return alert(data.error||'Could not save diagnostic');setResult(data);}
@@ -28,4 +28,4 @@ export function DiagnosticForm(){
  {result&&<Result result={result}/>}</div>
 }
 function F({label,children}:{label:string,children:React.ReactNode}){return <div className="field"><label>{label}</label>{children}</div>}
-function Result({result}:{result:any}){const r=result.result;return <div className="card"><div className="result-hero"><div className="big-score"><div><strong>{r.normalized}</strong><div>/100</div></div></div><div><span className="pill">{r.recommendation.readiness}</span><h2 style={{marginTop:12}}>{r.recommendation.engine}</h2><p className="lead">{r.recommendation.explanation}</p><p><b>Delivery:</b> {r.delivery}</p></div></div><div className="grid three" style={{marginTop:20}}>{Object.entries(r.scores).map(([k,v]:any)=><div className="metric" key={k}><span>{k}</span><strong>{v}/20</strong><div className="bar"><span style={{width:`${v/20*100}%`}}/></div></div>)}</div></div>}
+function Result({result}:{result:any}){const r=result.result||result;return <div className="card"><div className="result-hero"><div className="big-score"><div><strong>{r.normalized}</strong><div>/100</div></div></div><div><span className="pill">{r.recommendation.readiness}</span><h2 style={{marginTop:12}}>{r.recommendation.engine}</h2><p className="lead">{r.recommendation.explanation}</p><p><b>Delivery:</b> {r.delivery}</p></div></div><div className="grid three" style={{marginTop:20}}>{Object.entries(r.scores).map(([k,v]:any)=><div className="metric" key={k}><span>{k}</span><strong>{v}/20</strong><div className="bar"><span style={{width:`${v/20*100}%`}}/></div></div>)}</div></div>}
