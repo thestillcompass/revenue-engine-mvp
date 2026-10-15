@@ -4,11 +4,11 @@ import { maturityLabels, pillars, questions } from '@/lib/engine/questions'
 
 const defaultProfile={businessName:'',offer:'',idealCustomer:'',avgValue:100000,monthlyLeads:25,leadSource:'Instagram / Meta',crm:'Zoho CRM',bookingTool:'Calendly',offersCount:0,salesUsers:0,capability:1,bookingComplexity:0}
 
-export function DiagnosticForm({initialProfile,initialAnswers,initialResult}:{initialProfile?:any,initialAnswers?:Record<string,number>,initialResult?:any}){
- const [answers,setAnswers]=useState<Record<string,number>>(initialAnswers||{});const [profile,setProfile]=useState<any>(initialProfile||defaultProfile);const [busy,setBusy]=useState(false);const [result,setResult]=useState<any>(initialResult||null);const answered=Object.keys(answers).length
+export function DiagnosticForm({initialProfile,initialAnswers,initialResult,initialHistory=[]}:{initialProfile?:any,initialAnswers?:Record<string,number>,initialResult?:any,initialHistory?:any[]}){
+ const [answers,setAnswers]=useState<Record<string,number>>(initialAnswers||{});const [profile,setProfile]=useState<any>(initialProfile||defaultProfile);const [busy,setBusy]=useState(false);const [result,setResult]=useState<any>(initialResult||null);const [history,setHistory]=useState<any[]>(initialHistory);const answered=Object.keys(answers).length
  const groups=useMemo(()=>pillars.map(p=>({...p,qs:questions.filter(q=>q.pillar===p.code)})),[])
  function setP(k:string,v:any){setProfile((x:any)=>({...x,[k]:v}))}
- async function submit(){if(answered<30)return alert('Please score all 30 questions.');setBusy(true);const r=await fetch('/api/diagnostics',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({profile,answers})});const data=await r.json();setBusy(false);if(!r.ok)return alert(data.error||'Could not save diagnostic');setResult(data);}
+ async function submit(){if(answered<30)return alert('Please score all 30 questions.');setBusy(true);const r=await fetch('/api/diagnostics',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({profile,answers})});const data=await r.json();setBusy(false);if(!r.ok)return alert(data.error||'Could not save diagnostic');setResult(data);if(data.saved&&!data.duplicate){const h={id:data.saved.id,normalized:data.saved.normalized,primaryLeak:data.saved.primary_leak,recommendation:data.saved.recommendation,delivery:data.saved.delivery,createdAt:data.saved.created_at};setHistory(x=>[h,...x].slice(0,10));}}
  return <div className="stack"><div className="card"><div className="eyebrow">Business profile</div><h2>Commercial context</h2><div className="form-grid">
    <F label="Business / workspace name"><input className="input" value={profile.businessName} onChange={e=>setP('businessName',e.target.value)} /></F>
    <F label="Primary offer"><input className="input" value={profile.offer} onChange={e=>setP('offer',e.target.value)} /></F>
@@ -25,7 +25,12 @@ export function DiagnosticForm({initialProfile,initialAnswers,initialResult}:{in
  </div></div>
  {groups.map(g=><div className="card pillar" key={g.code}><span className="pill">{g.code} · {g.name}</span><h3 style={{marginTop:12}}>{g.description}</h3>{g.qs.map(q=><div className="qrow" key={q.key}><div><b>{q.label}</b><div className="muted" style={{fontSize:12,marginTop:4}}>{answers[q.key]!==undefined?maturityLabels[answers[q.key]]:'Choose 0–4'}</div></div><div className="scale">{[0,1,2,3,4].map(v=><button className={answers[q.key]===v?'selected':''} onClick={()=>setAnswers(a=>({...a,[q.key]:v}))} type="button" key={v}>{v}</button>)}</div></div>)}</div>)}
  <div className="card"><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:12,flexWrap:'wrap'}}><div><b>{answered}/30 answered</b><div className="muted">0 = missing · 4 = optimized</div></div><button className="btn primary" disabled={busy} onClick={submit}>{busy?'Analyzing…':'Analyze & Save'}</button></div></div>
- {result&&<Result result={result}/>}</div>
+ {result&&<Result result={result}/>}<History items={history}/></div>
 }
 function F({label,children}:{label:string,children:React.ReactNode}){return <div className="field"><label>{label}</label>{children}</div>}
 function Result({result}:{result:any}){const r=result.result||result;return <div className="card"><div className="result-hero"><div className="big-score"><div><strong>{r.normalized}</strong><div>/100</div></div></div><div><span className="pill">{r.recommendation.readiness}</span><h2 style={{marginTop:12}}>{r.recommendation.engine}</h2><p className="lead">{r.recommendation.explanation}</p><p><b>Delivery:</b> {r.delivery}</p></div></div><div className="grid three" style={{marginTop:20}}>{Object.entries(r.scores).map(([k,v]:any)=><div className="metric" key={k}><span>{k}</span><strong>{v}/20</strong><div className="bar"><span style={{width:`${v/20*100}%`}}/></div></div>)}</div></div>}
+
+function History({items}:{items:any[]}){
+ if(!items.length)return null
+ return <div className="card"><div className="eyebrow">Diagnostic history</div><h2>Progress over time</h2><p className="muted">Each changed diagnostic is preserved as a separate run. Identical repeat submissions are not duplicated.</p><div className="stack">{items.map((item:any,index:number)=>{const previous=items[index+1];const delta=previous?item.normalized-previous.normalized:null;return <div className="mini-row" key={item.id}><div><b>{index===0?'Latest run':'Previous run'}</b><div className="muted">{new Date(item.createdAt).toLocaleString()}</div></div><div style={{textAlign:'right'}}><b>{item.normalized}/100</b>{delta!==null&&<div className="muted">{delta>0?'+':''}{delta} vs prior</div>}</div></div>})}</div></div>
+}
