@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { apiServerError } from '@/lib/api-response'
 import { createClient } from '@/lib/supabase/server'
 import { getOrCreateWorkspace } from '@/lib/supabase/workspace'
 import { calculateMetrics } from '@/lib/engine/metrics'
@@ -22,5 +23,5 @@ export async function POST(req:Request){
   const {data,error}=await supabase.from('metric_snapshots').insert({workspace_id:ws.id,user_id:user.id,inputs,metrics}).select().single()
   if(error)throw error
   return NextResponse.json({saved:data,metrics})
- }catch(e:any){return NextResponse.json({error:e.message||'Metrics failed'},{status:500})}
+ }catch(e:unknown){return apiServerError('Revenue intelligence request failed',e)}
 }
