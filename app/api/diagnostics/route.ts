@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { apiServerError } from '@/lib/api-response'
 import { createClient } from '@/lib/supabase/server'
 import { analyzeDiagnostic, type BusinessProfile } from '@/lib/engine/diagnostic'
 import { validateDiagnosticInput } from '@/lib/engine/validation'
@@ -26,5 +27,5 @@ export async function POST(req:Request){
   const {data,error}=await supabase.from('diagnostics').insert({workspace_id:workspace.id,user_id:user.id,answers,scores:result.scores,normalized:result.normalized,priorities:result.priorities,primary_leak:result.primaryLeak,secondary_leak:result.secondaryLeak,recommendation:result.recommendation,delivery:result.delivery}).select().single()
   if(error)throw error
   return NextResponse.json({saved:data,result})
- }catch(e:any){return NextResponse.json({error:e.message||'Diagnostic failed'},{status:500})}
+ }catch(e:unknown){return apiServerError('Diagnostic request failed',e)}
 }
