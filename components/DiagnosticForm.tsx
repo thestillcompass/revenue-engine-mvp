@@ -1,15 +1,30 @@
 'use client'
 import { useMemo, useState } from 'react'
 import { maturityLabels, pillars, questions } from '@/lib/engine/questions'
+import { ErrorNotice, friendlyRequestError, readApiResponse } from '@/components/ErrorNotice'
 
 const defaultProfile={businessName:'',offer:'',idealCustomer:'',avgValue:100000,monthlyLeads:25,leadSource:'Instagram / Meta',crm:'Zoho CRM',bookingTool:'Calendly',offersCount:0,salesUsers:0,capability:1,bookingComplexity:0}
 
 export function DiagnosticForm({initialProfile,initialAnswers,initialResult,initialHistory=[]}:{initialProfile?:any,initialAnswers?:Record<string,number>,initialResult?:any,initialHistory?:any[]}){
- const [answers,setAnswers]=useState<Record<string,number>>(initialAnswers||{});const [profile,setProfile]=useState<any>(initialProfile||defaultProfile);const [busy,setBusy]=useState(false);const [result,setResult]=useState<any>(initialResult||null);const [history,setHistory]=useState<any[]>(initialHistory);const answered=Object.keys(answers).length
+ const [answers,setAnswers]=useState<Record<string,number>>(initialAnswers||{});const [profile,setProfile]=useState<any>(initialProfile||defaultProfile);const [busy,setBusy]=useState(false);const [result,setResult]=useState<any>(initialResult||null);const [history,setHistory]=useState<any[]>(initialHistory);const [error,setError]=useState('');const answered=Object.keys(answers).length
  const groups=useMemo(()=>pillars.map(p=>({...p,qs:questions.filter(q=>q.pillar===p.code)})),[])
  function setP(k:string,v:any){setProfile((x:any)=>({...x,[k]:v}))}
- async function submit(){if(answered<30)return alert('Please score all 30 questions.');setBusy(true);const r=await fetch('/api/diagnostics',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({profile,answers})});const data=await r.json();setBusy(false);if(!r.ok)return alert(data.error||'Could not save diagnostic');setResult(data);if(data.saved&&!data.duplicate){const h={id:data.saved.id,normalized:data.saved.normalized,primaryLeak:data.saved.primary_leak,recommendation:data.saved.recommendation,delivery:data.saved.delivery,createdAt:data.saved.created_at};setHistory(x=>[h,...x].slice(0,10));}}
- return <div className="stack"><div className="card"><div className="eyebrow">Business profile</div><h2>Commercial context</h2><div className="form-grid">
+ async function submit(){
+  if(answered<30)return setError('Please score all 30 questions before analyzing your system.')
+  setBusy(true);setError('')
+  try{
+    const r=await fetch('/api/diagnostics',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({profile,answers})})
+    const data=await readApiResponse(r)
+    setResult(data)
+    if(data.saved&&!data.duplicate){
+      const h={id:data.saved.id,normalized:data.saved.normalized,primaryLeak:data.saved.primary_leak,recommendation:data.saved.recommendation,delivery:data.saved.delivery,createdAt:data.saved.created_at}
+      setHistory(x=>[h,...x].slice(0,10))
+    }
+  }catch(e:any){
+    if(e?.message!=='SESSION_EXPIRED')setError(e?.message||friendlyRequestError(e))
+  }finally{setBusy(false)}
+ }
+ return <div className="stack">{error&&<ErrorNotice message={error} onRetry={answered===30?submit:undefined}/>} <div className="card"><div className="eyebrow">Business profile</div><h2>Commercial context</h2><div className="form-grid">
    <F label="Business / workspace name"><input className="input" value={profile.businessName} onChange={e=>setP('businessName',e.target.value)} /></F>
    <F label="Primary offer"><input className="input" value={profile.offer} onChange={e=>setP('offer',e.target.value)} /></F>
    <F label="Ideal customer"><input className="input" value={profile.idealCustomer} onChange={e=>setP('idealCustomer',e.target.value)} /></F>
