@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { apiServerError } from '@/lib/api-response'
 import { createClient } from '@/lib/supabase/server'
 import { getOrCreateWorkspace } from '@/lib/supabase/workspace'
 import { generateCqf } from '@/lib/engine/cqf'
@@ -22,5 +23,5 @@ export async function POST(req:Request){
   const {data,error}=await supabase.from('cqf_models').insert({workspace_id:ws.id,user_id:user.id,inputs,model}).select().single()
   if(error)throw error
   return NextResponse.json({saved:data,model})
- }catch(e:any){return NextResponse.json({error:e.message||'CQF failed'},{status:500})}
+ }catch(e:unknown){return apiServerError('Qualification request failed',e)}
 }
