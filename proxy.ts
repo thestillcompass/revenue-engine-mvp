@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request })
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
@@ -17,7 +18,20 @@ export async function proxy(request: NextRequest) {
       }
     }
   )
-  await supabase.auth.getClaims()
+
+  const { data } = await supabase.auth.getClaims()
+  const claims = data?.claims
+  const pathname = request.nextUrl.pathname
+
+  if (pathname.startsWith('/app') && !claims) {
+    const loginUrl = request.nextUrl.clone()
+    loginUrl.pathname = '/login'
+    loginUrl.search = ''
+    loginUrl.searchParams.set('reason', 'session_expired')
+    loginUrl.searchParams.set('next', pathname + request.nextUrl.search)
+    return NextResponse.redirect(loginUrl)
+  }
+
   return response
 }
 
