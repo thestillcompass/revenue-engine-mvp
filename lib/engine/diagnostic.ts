@@ -73,6 +73,15 @@ function route(s: Record<PillarCode, number>, p: BusinessProfile): DiagnosticRes
     }
   }
 
+  const downstreamHealthy = s.C >= 12 && s.Q >= 12 && s.V >= 12 && s.N >= 12
+  if (s.A <= 11 && downstreamHealthy) {
+    return {
+      readiness:'Ready', diagnosis:'Acquisition is the limiting constraint', modules:['M1'],
+      engine:'Acquisition Blueprint', cta:'Strengthen My Lead Flow',
+      explanation:'The downstream revenue journey is structurally healthy, but demand entering the system is not yet strong enough to justify deeper conversion optimization.'
+    }
+  }
+
   const weak = (x:PillarCode, n=10) => s[x] <= n
   let modules:string[] = []
   let engine = ''
