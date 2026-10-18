@@ -17,6 +17,8 @@ jobs:
         with:
           node-version: 24
       - run: npm install --no-audit --no-fund
+      - name: Recommendation consistency
+        run: npm run test:consistency
       - name: Build
         id: build
         shell: bash
