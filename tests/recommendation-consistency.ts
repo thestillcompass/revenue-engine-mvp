@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { analyzeDiagnostic, type BusinessProfile } from '../lib/engine/diagnostic'
+import { generateCqf } from '../lib/engine/cqf'
 
 const profile: BusinessProfile = {
   businessName:'Test Co',
@@ -41,6 +42,7 @@ const cases=[
   {name:'measurement only',scores:{A:14,C:14,Q:14,V:14,N:14,M:7},modules:['M6'],engine:'Revenue Intelligence Setup'},
   {name:'capture plus qualification',scores:{A:14,C:8,Q:8,V:14,N:14,M:14},modules:['M2','M3'],engine:'Lead Capture & Qualification Engine'},
   {name:'qualification plus conversion',scores:{A:14,C:14,Q:8,V:8,N:14,M:14},modules:['M3','M4'],engine:'Qualified Consultation Engine'},
+  {name:'human plausibility boundary',scores:{A:9,C:15,Q:10,V:11,N:12,M:12},modules:['M3','M4'],engine:'Qualified Consultation Engine'},
   {name:'conversion plus nurture',scores:{A:14,C:14,Q:14,V:8,N:8,M:14},modules:['M4','M5'],engine:'Conversion & Nurture Engine'},
   {name:'capture qualification conversion',scores:{A:14,C:8,Q:8,V:8,N:14,M:14},modules:['M2','M3','M4'],engine:'Lead-to-Consultation Engine'},
   {name:'qualification conversion nurture',scores:{A:14,C:14,Q:8,V:8,N:8,M:14},modules:['M3','M4','M5'],engine:'Lead-to-Sale Lifecycle Engine'},
@@ -65,4 +67,11 @@ assert.equal(assisted.delivery,'Assisted Deployment')
 const dfy=analyzeDiagnostic(answersFromScores({A:14,C:14,Q:8,V:8,N:14,M:14}),{...profile,offersCount:2,salesUsers:2,bookingComplexity:2,crm:'Other / Custom'})
 assert.equal(dfy.delivery,'Done-for-You')
 
-console.log(`Recommendation consistency: ${cases.length+3} scenarios passed`)
+const cqf=generateCqf({fit:'20+ employees',need:'Founder Dependency',value:'5Cr+ turnover',authority:'Founder',timing:'30',disqualifiers:'Direct Consumers'})
+assert.equal(cqf.maxScore,40)
+assert.equal(cqf.questions.reduce((sum,q)=>sum+q.max,0),40)
+assert.ok(cqf.questions.every(q=>q.scoring.length>=4),'Every CQF dimension must expose a scoring rubric')
+assert.deepEqual(cqf.routingOrder,['Exit','Sales Ready','Nurture','Potential Fit'])
+assert.ok(cqf.routing.every(r=>r.action && r.rule),'Every CQF route must explain both rule and action')
+
+console.log(`Recommendation consistency: ${cases.length+4} scenarios passed`)
