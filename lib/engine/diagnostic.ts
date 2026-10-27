@@ -82,7 +82,7 @@ function route(s: Record<PillarCode, number>, p: BusinessProfile): DiagnosticRes
     }
   }
 
-  const weak = (x:PillarCode, n=10) => s[x] <= n
+  const weak = (x:PillarCode, n=11) => s[x] <= n
   let modules:string[] = []
   let engine = ''
   let diagnosis = ''
@@ -107,19 +107,19 @@ function route(s: Record<PillarCode, number>, p: BusinessProfile): DiagnosticRes
   } else if (weak('V') && weak('N')) {
     modules=['M4','M5']; engine='Conversion & Nurture Engine'; diagnosis='Follow-up and lifecycle leakage'; cta='Improve My Follow-Up System';
     explanation='Good prospects are not consistently moving into booked conversations or being developed when they are not ready immediately.'
-  } else if (s.C <= 9 && s.Q >= 12) {
+  } else if (s.C <= 11 && s.Q >= 12) {
     modules=['M2']; engine='Lead Capture Engine'; diagnosis='Capture leakage'; cta='Stop Losing Enquiries';
     explanation='Demand exists but enquiries are not being captured, responded to or preserved reliably.'
-  } else if (s.Q <= 9 && s.C >= 10) {
+  } else if (s.Q <= 11 && s.C >= 12) {
     modules=['M3']; engine='CQF Qualification Engine'; diagnosis='Poor qualification'; cta='Build My Qualification System';
     explanation='The business cannot consistently distinguish high-value opportunities from poor-fit enquiries.'
-  } else if (s.V <= 9 && s.Q >= 12) {
+  } else if (s.V <= 11 && s.Q >= 12) {
     modules=['M4']; engine='Booking & Conversion Engine'; diagnosis='Booking and conversion leakage'; cta='Improve My Booking Conversion';
     explanation='Qualified prospects exist, but too few are progressing into attended sales conversations.'
-  } else if (s.N <= 9 && s.Q >= 11 && s.V >= 11) {
+  } else if (s.N <= 11 && s.Q >= 12 && s.V >= 12) {
     modules=['M5']; engine='Lead Nurture Engine'; diagnosis='Nurture leakage'; cta='Recover My Dormant Leads';
     explanation='The immediate funnel works, but valuable prospects disappear when they are not ready to buy now.'
-  } else if (s.M <= 8) {
+  } else if (s.M <= 11) {
     modules=['M6']; engine='Revenue Intelligence Setup'; diagnosis='Attribution blind spot'; cta='See What Actually Converts';
     explanation='The business has activity but cannot reliably connect marketing and funnel behavior to commercial outcomes.'
   } else {
@@ -127,7 +127,7 @@ function route(s: Record<PillarCode, number>, p: BusinessProfile): DiagnosticRes
     explanation='The core journey is reasonably healthy. The next value lies in ongoing measurement, experimentation and optimization.'
   }
 
-  if (s.M <= 10 && modules.length && !modules.includes('M6') && !modules.includes('M7')) modules.push('M6')
+  if (s.M <= 11 && modules.length && !modules.includes('M6') && !modules.includes('M7')) modules.push('M6')
   return { readiness:'Ready', diagnosis, modules, engine, cta, explanation }
 }
 
