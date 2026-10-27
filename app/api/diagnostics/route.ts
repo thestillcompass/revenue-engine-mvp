@@ -18,12 +18,19 @@ export async function POST(req:Request){
   if(validationError)return NextResponse.json({error:validationError},{status:400})
 
   const workspace=await getOrCreateWorkspace(supabase,user.id,profile)
+  const result=analyzeDiagnostic(answers,profile)
   const latest=(await supabase.from('diagnostics').select('*').eq('workspace_id',workspace.id).order('created_at',{ascending:false}).limit(1).maybeSingle()).data
-  if(latest && JSON.stringify(latest.answers)===JSON.stringify(answers) && JSON.stringify(workspace.profile)===JSON.stringify(profile)){
+  const sameResult=latest &&
+    latest.normalized===result.normalized &&
+    latest.primary_leak===result.primaryLeak &&
+    latest.secondary_leak===result.secondaryLeak &&
+    latest.delivery===result.delivery &&
+    JSON.stringify(latest.scores)===JSON.stringify(result.scores) &&
+    JSON.stringify(latest.priorities)===JSON.stringify(result.priorities) &&
+    JSON.stringify(latest.recommendation)===JSON.stringify(result.recommendation)
+  if(latest && JSON.stringify(latest.answers)===JSON.stringify(answers) && sameResult){
     return NextResponse.json({saved:latest,result:{scores:latest.scores,normalized:latest.normalized,priorities:latest.priorities,primaryLeak:latest.primary_leak,secondaryLeak:latest.secondary_leak,recommendation:latest.recommendation,delivery:latest.delivery},duplicate:true})
   }
-
-  const result=analyzeDiagnostic(answers,profile)
   const {data,error}=await supabase.from('diagnostics').insert({workspace_id:workspace.id,user_id:user.id,answers,scores:result.scores,normalized:result.normalized,priorities:result.priorities,primary_leak:result.primaryLeak,secondary_leak:result.secondaryLeak,recommendation:result.recommendation,delivery:result.delivery}).select().single()
   if(error)throw error
   return NextResponse.json({saved:data,result})
