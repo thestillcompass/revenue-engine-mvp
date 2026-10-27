@@ -15,6 +15,22 @@ export function CqfBuilder({initialInputs,initialModel}:{initialInputs?:any,init
   }finally{setBusy(false)}
  }
  return <div className="stack">{error&&<ErrorNotice message={error} onRetry={generate}/>}<div className="grid two"><div className="card"><div className="eyebrow">CQF inputs</div><h2>Define a valuable lead</h2><div className="stack"><F label="Ideal customer"><textarea className="textarea" value={f.fit} onChange={e=>set('fit',e.target.value)} placeholder="B2B SME, 20–200 employees, India/UAE"/></F><F label="Strong-fit problems"><textarea className="textarea" value={f.need} onChange={e=>set('need',e.target.value)} placeholder="founder dependency, operational bottlenecks"/></F><F label="Commercial threshold"><textarea className="textarea" value={f.value} onChange={e=>set('value',e.target.value)} placeholder="₹50,000+ engagement, ₹5Cr+ turnover"/></F><F label="Decision makers"><input className="input" value={f.authority} onChange={e=>set('authority',e.target.value)} placeholder="Founder, CEO, COO"/></F><F label="Timing"><select className="select" value={f.timing} onChange={e=>set('timing',e.target.value)}><option value="30">Within 30 days</option><option value="90">Within 90 days</option><option value="180">Within 6 months</option></select></F><F label="Hard disqualifiers"><textarea className="textarea" value={f.disqualifiers} onChange={e=>set('disqualifiers',e.target.value)} placeholder="students, consumers, outside geography"/></F><button onClick={generate} className="btn primary" disabled={busy}>{busy?'Generating…':'Generate qualification model'}</button></div></div>
- <div className="card">{!out?<><div className="eyebrow">Output</div><h2>Your CQF will appear here</h2><p className="muted">The hosted MVP generates five qualification dimensions, thresholds and routing rules.</p></>:<><span className="pill">{out.framework} · {out.maxScore} points</span><h2 style={{marginTop:12}}>Qualification model</h2><div className="stack">{out.questions.map((q:any)=><div className="metric" key={q.dimension}><span>{q.dimension} · max {q.max}</span><strong style={{fontSize:17}}>{q.prompt}</strong><div className="muted">{q.type}</div></div>)}</div><h3 style={{marginTop:20}}>Routing</h3>{out.routing.map((r:any)=><div className="mini-row" key={r.state}><b>{r.state}</b><span className="muted">{r.rule}</span></div>)}</>}</div></div></div>
+ <div className="card">{!out?<><div className="eyebrow">Output</div><h2>Your CQF will appear here</h2><p className="muted">The hosted MVP generates five qualification dimensions, scoring rules and deterministic routing actions.</p></>:<>
+   <span className="pill">{out.framework} · {out.maxScore} points</span>
+   <h2 style={{marginTop:12}}>Qualification model</h2>
+   <p className="muted">{out.explanation}</p>
+   <div className="stack">{out.questions.map((q:any)=><div className="metric" key={q.dimension}>
+     <span>{q.dimension} · max {q.max}</span>
+     <strong style={{fontSize:17}}>{q.prompt}</strong>
+     <div className="muted">{q.type}</div>
+     <div style={{marginTop:12}}>{(q.scoring||[]).map((s:any)=><div className="mini-row" key={s.label}><span>{s.label}</span><b>{s.score}/{q.max}</b></div>)}</div>
+   </div>)}</div>
+   <h3 style={{marginTop:20}}>How routing works</h3>
+   <p className="muted">The system evaluates routing rules in order. The first matching state wins, so every lead receives one clear next action.</p>
+   {(out.routing||[]).map((r:any)=><div className="metric" key={r.state} style={{marginBottom:10}}>
+     <div className="mini-row"><b>{r.priority}. {r.state}</b><span className="muted">{r.rule}</span></div>
+     <div className="muted" style={{marginTop:8}}><b>Action:</b> {r.action}</div>
+   </div>)}
+  </>}</div></div></div>
 }
 function F({label,children}:{label:string,children:React.ReactNode}){return <div className="field"><label>{label}</label>{children}</div>}
