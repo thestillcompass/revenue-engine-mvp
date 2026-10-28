@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 type Funnel = {name:string;business:string;headline:string;description:string;cta:string;question:string}
 const initial:Funnel={name:'Consultation funnel',business:'Your Business',headline:'Let’s find the right next step for your business.',description:'Tell us a little about your goals and we’ll help you explore your options.',cta:'Start my enquiry',question:'What would you like help with?'}
@@ -7,6 +7,15 @@ export function ConsultationFunnelStudio(){
  const [draft,setDraft]=useState<Funnel>(initial)
  const [view,setView]=useState<'desktop'|'mobile'>('desktop')
  const [showQuestions,setShowQuestions]=useState(false)
+ const [loading,setLoading]=useState(true)
+ const [saving,setSaving]=useState(false)
+ const [notice,setNotice]=useState('')
+ useEffect(()=>{
+  let active=true
+  fetch('/api/funnel-draft',{cache:'no-store'}).then(async r=>{if(!r.ok)throw new Error('Draft loading is unavailable');return r.json()}).then(data=>{if(active&&data.draft)setDraft(data.draft)}).catch(()=>{if(active)setNotice('Draft storage is not configured yet. Changes here are temporary.')}).finally(()=>{if(active)setLoading(false)})
+  return ()=>{active=false}
+ },[])
+ async function saveDraft(){setSaving(true);setNotice('');try{const r=await fetch('/api/funnel-draft',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify(draft)});if(!r.ok)throw Error('Could not save draft');setNotice('Draft saved to your workspace.')}catch{setNotice('Save failed. Your edits remain on this page only.')}finally{setSaving(false)}}
  const change=(key:keyof Funnel,value:string)=>setDraft(p=>({...p,[key]:value}))
  const fields: {key:keyof Funnel;label:string;max:number;multiline?:boolean}[]=[
   {key:'name',label:'Internal funnel name',max:80},
@@ -19,7 +28,7 @@ export function ConsultationFunnelStudio(){
  return <div className="v3-studio">
   <section className="card v3-editor"><div className="eyebrow">Step 1 · Create</div><h2>Make it yours</h2><p className="muted">Edit the text, then try your funnel preview. Nothing is published or sent to customers.</p>
    <div className="stack">{fields.map(f=><div className="field" key={f.key}><label htmlFor={'f-'+f.key}>{f.label}</label>{f.multiline?<textarea id={'f-'+f.key} className="textarea" maxLength={f.max} value={draft[f.key]} onChange={e=>change(f.key,e.target.value)}/>:<input id={'f-'+f.key} className="input" maxLength={f.max} value={draft[f.key]} onChange={e=>change(f.key,e.target.value)}/>}</div>)}</div>
-   <button className="btn secondary" type="button" onClick={()=>{setDraft(initial);setShowQuestions(false)}}>Reset example</button>
+   <div className="hero-actions"><button className="btn primary" type="button" disabled={saving||loading} onClick={saveDraft}>{saving?'Saving…':'Save draft'}</button><button className="btn secondary" type="button" onClick={()=>{setDraft(initial);setShowQuestions(false);setNotice('Example restored locally. Click Save draft to keep it.') }}>Reset example</button></div><p aria-live="polite" className="muted">{loading?'Loading saved draft…':notice||'Changes are not saved automatically.'}</p>
   </section>
   <section className="card v3-preview-wrap"><div className="v3-preview-head"><div><div className="eyebrow">Step 2 · Preview</div><h2>See what visitors see</h2></div><div className="v3-preview-toggle" aria-label="Preview width"><button className={'btn '+(view==='desktop'?'primary':'secondary')} type="button" onClick={()=>setView('desktop')} aria-pressed={view==='desktop'}>Desktop</button><button className={'btn '+(view==='mobile'?'primary':'secondary')} type="button" onClick={()=>setView('mobile')} aria-pressed={view==='mobile'}>Mobile</button></div></div>
   <div className={'v3-preview '+(view==='mobile'?'v3-preview-mobile':'')}><div className="v3-preview-brand">{draft.business||'Your business'}</div>{!showQuestions?<div className="v3-preview-content"><span className="v3-tag">Let's get started</span><h2>{draft.headline||'Your headline goes here'}</h2><p>{draft.description||'Add a short description of your offer.'}</p><button type="button" className="btn primary" onClick={()=>setShowQuestions(true)}>{draft.cta||'Get started'} →</button></div>:<div className="v3-preview-content"><span className="v3-tag">A quick question</span><h2>{draft.question||'Tell us about your needs'}</h2><label htmlFor="v3-demo-answer">Your answer</label><textarea id="v3-demo-answer" className="textarea" placeholder="This is a preview only; no answer is stored."/><p className="muted">Preview only — this form does not submit or save information.</p><button type="button" className="btn secondary" onClick={()=>setShowQuestions(false)}>← Back to introduction</button></div>}</div>
