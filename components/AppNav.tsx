@@ -5,6 +5,7 @@ import Link from 'next/link'
 export function AppNav({active}:{active:string}){
  const items=[
   ['overview','/app','Home'],
+  ['studio','/app/funnel-studio','Funnel studio (preview)'],
   ['diagnostic','/app/diagnostic','Check my system'],
   ['qualification','/app/qualification','Who is a good lead?'],
   ['journey','/app/journey','Plan my journey'],
