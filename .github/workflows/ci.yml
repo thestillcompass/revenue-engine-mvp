@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'feature/v3-owner-workspace']
   workflow_dispatch:
 
 jobs:
