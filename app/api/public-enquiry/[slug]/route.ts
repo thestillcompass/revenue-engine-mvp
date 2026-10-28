@@ -1,0 +1,18 @@
+import { createClient } from '@supabase/supabase-js'
+import { NextResponse } from 'next/server'
+export async function POST(req:Request,{params}:{params:Promise<{slug:string}>}){
+ const {slug}=await params
+ if(!/^[a-f0-9]{32}$/.test(slug))return NextResponse.json({error:'Invalid form'},{status:400})
+ const body=await req.text()
+ if(Buffer.byteLength(body,'utf8')>4096)return NextResponse.json({error:'Request too large'},{status:413})
+ let value:unknown
+ try{value=JSON.parse(body)}catch{return NextResponse.json({error:'Invalid request'},{status:400})}
+ if(!value||typeof value!=='object'||Array.isArray(value))return NextResponse.json({error:'Invalid request'},{status:400})
+ const v=value as Record<string,unknown>
+ if(typeof v.name!=='string'||typeof v.email!=='string'||typeof v.answer!=='string'||v.consent!==true||typeof v.website!=='string'||v.name.length>120||v.email.length>254||v.answer.length>1500||v.website.length>100)return NextResponse.json({error:'Check all fields and consent'},{status:400})
+ const db=createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!,process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,{auth:{persistSession:false}})
+ const {data,error}=await db.rpc('submit_funnel_enquiry',{p_slug:slug,p_name:v.name,p_email:v.email,p_answer:v.answer,p_consent:v.consent,p_website:v.website})
+ if(error)return NextResponse.json({error:'Unable to submit enquiry'},{status:503})
+ if(data!==true)return NextResponse.json({error:'Unable to accept enquiry. Check your details or try later.'},{status:400})
+ return NextResponse.json({submitted:true},{headers:{'Cache-Control':'no-store'}})
+}
