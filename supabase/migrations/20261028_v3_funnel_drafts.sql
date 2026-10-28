@@ -17,5 +17,5 @@ create policy "funnel_drafts_owner_insert" on public.funnel_drafts for insert to
 create policy "funnel_drafts_owner_update" on public.funnel_drafts for update to authenticated
  using (user_id = (select auth.uid()) and exists (select 1 from public.workspaces w where w.id = workspace_id and w.user_id = (select auth.uid())))
  with check (user_id = (select auth.uid()) and exists (select 1 from public.workspaces w where w.id = workspace_id and w.user_id = (select auth.uid())));
-revoke all on public.funnel_drafts from anon;
+revoke all on public.funnel_drafts from anon, authenticated;
 grant select, insert, update on public.funnel_drafts to authenticated;
