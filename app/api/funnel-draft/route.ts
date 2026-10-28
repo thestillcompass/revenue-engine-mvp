@@ -10,7 +10,7 @@ function validate(input:unknown):Record<Key,string>|null{
  const record=input as Record<string,unknown>
  const result={} as Record<Key,string>
  for(const key of Object.keys(lengths) as Key[]){
-  if(typeof record[key]!=='string'||(record[key] as string).length>lengths[key])return null
+  if(typeof record[key]!=='string'||(record[key] as string).length>lengths[key]||((key==='name'||key==='business'||key==='headline'||key==='cta'||key==='question') && !(record[key] as string).trim()))return null
   result[key]=record[key] as string
  }
  return result
@@ -31,7 +31,10 @@ export async function PUT(req:Request){
   const supabase=await createClient()
   const {data:{user}}=await supabase.auth.getUser()
   if(!user)return NextResponse.json({error:'Unauthorized'},{status:401})
-  const raw=await req.json().catch(()=>null)
+  const body=await req.text()
+  if(Buffer.byteLength(body,'utf8')>4096)return NextResponse.json({error:'Draft is too large'},{status:413})
+  let raw:unknown=null
+  try{raw=JSON.parse(body)}catch{return NextResponse.json({error:'Invalid JSON'},{status:400})}
   const draft=validate(raw)
   if(!draft)return NextResponse.json({error:'Invalid funnel draft'},{status:400})
   const ws=await getOrCreateWorkspace(supabase,user.id)
