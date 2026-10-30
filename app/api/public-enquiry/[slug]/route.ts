@@ -13,9 +13,7 @@ export async function POST(req:Request,{params}:{params:Promise<{slug:string}>})
  if(typeof v.name!=='string'||typeof v.email!=='string'||typeof v.answer!=='string'||v.consent!==true||typeof v.website!=='string'||v.name.length>120||v.email.length>254||v.answer.length>1500||v.website.length>100)return NextResponse.json({error:'Check all fields and consent'},{status:400})
  const secret=process.env.TURNSTILE_SECRET_KEY
  const serverKey=process.env.SUPABASE_SECRET_KEY
- // Until staging credentials are provisioned, preserve the existing limited pilot behaviour.
- // DO NOT revoke the anonymous RPC grant before both private keys and the widget are tested.
- if(Boolean(secret)!==Boolean(serverKey))return NextResponse.json({error:'Submission security is not fully configured'},{status:503})
+ if(!secret||!serverKey||!process.env.TURNSTILE_EXPECTED_HOSTNAME)return NextResponse.json({error:'Submission temporarily unavailable'},{status:503})
  if(secret && serverKey){
   if(typeof v.turnstileToken!=='string'||v.turnstileToken.length<1||v.turnstileToken.length>2048)return NextResponse.json({error:'Complete the security check'},{status:400})
   let accepted=false
@@ -30,7 +28,7 @@ export async function POST(req:Request,{params}:{params:Promise<{slug:string}>})
   }catch{accepted=false}
   if(!accepted)return NextResponse.json({error:'Security check failed. Please retry.'},{status:403})
  }
- const db=createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!,serverKey||process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,{auth:{persistSession:false,autoRefreshToken:false}})
+ const db=createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!,serverKey,{auth:{persistSession:false,autoRefreshToken:false}})
  const {data,error}=await db.rpc('submit_funnel_enquiry',{p_slug:slug,p_name:v.name,p_email:v.email,p_answer:v.answer,p_consent:v.consent,p_website:v.website})
  if(error)return NextResponse.json({error:'Unable to submit enquiry'},{status:503})
  if(data!==true)return NextResponse.json({error:'Unable to accept enquiry. Check your details or try later.'},{status:400})
