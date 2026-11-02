@@ -9,8 +9,8 @@ const SLUG='87349ff4c1ff4c3194e5031eb78e8e56'
 const key=process.env.QA_STAGING_SUPABASE_SECRET_KEY
 if(process.env.QA_CONFIRM!=='RUN_STAGING_QA_ONLY'||process.env.QA_STAGING_SUPABASE_URL!==STAGING_URL||!key)throw new Error('QA guard failed: staging URL, secret, and explicit confirmation required')
 const db=createClient(STAGING_URL,key,{auth:{persistSession:false,autoRefreshToken:false}})
-const run=randomUUID().replaceAll('-','')
-const prefix='qa-concurrency-'+run
+const runId=randomUUID().replaceAll('-','')
+const prefix='qa-concurrency-'+runId
 let attempted=false
 async function count(){
  const {count,error}=await db.from('funnel_leads').select('id',{count:'exact',head:true}).eq('funnel_id',FUNNEL_ID).like('visitor_email',prefix+'%')
