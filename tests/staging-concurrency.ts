@@ -41,11 +41,14 @@ async function main(){
  if(stored!==15||accepted!==14)throw new Error('Rate-limit concurrency failed: '+JSON.stringify({stored,accepted}))
  console.log('PASS concurrent rate cap: 20 competing unique requests, 14 inserted, 15 total')
 } 
-try{await main()}finally{
- if(attempted){
-  const {error}=await db.from('funnel_leads').delete().eq('funnel_id',FUNNEL_ID).like('visitor_email',prefix+'%')
-  if(error)throw new Error('QA cleanup failed, inspect fixture safely: '+error.message)
-  if(await count()!==0)throw new Error('QA cleanup incomplete')
-  console.log('PASS cleanup: all run-specific leads removed')
+async function run(){
+ try{await main()}finally{
+  if(attempted){
+   const {error}=await db.from('funnel_leads').delete().eq('funnel_id',FUNNEL_ID).like('visitor_email',prefix+'%')
+   if(error)throw new Error('QA cleanup failed, inspect fixture safely: '+error.message)
+   if(await count()!==0)throw new Error('QA cleanup incomplete')
+   console.log('PASS cleanup: all run-specific leads removed')
+  }
  }
 }
+run().catch(error=>{console.error(error);process.exitCode=1})
