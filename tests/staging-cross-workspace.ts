@@ -4,7 +4,7 @@ const URL='https://wnjxbhcnizrelbasvxxv.supabase.co'
 const fixtures=[
  {id:'b3853ca5-8c85-447d-8436-1d83a5baf5e1',workspace:'eb40abb2-755b-4153-8aa7-9ccd6f4a33cf',owner:'cb30aee8-3ed9-43e7-81de-114302f39a58',slug:'87349ff4c1ff4c3194e5031eb78e8e56'},
  {id:'5be169c9-ea2f-463c-aaab-e683f7c1365d',workspace:'7138f258-f1f6-4185-ac74-462573970d01',owner:'a9cc3939-695d-4026-9328-5a2fb59e062a',slug:'8a43f51b6b6e4f7fab9885e3b74ebf31'}
-] as const
+] as {id:string;workspace:string;owner:string;slug:string}[]
 const key=process.env.QA_STAGING_SUPABASE_SECRET_KEY
 if(process.env.QA_CONFIRM!=='RUN_STAGING_QA_ONLY'||process.env.QA_STAGING_SUPABASE_URL!==URL||!key)throw new Error('Staging-only guard failed')
 if(fixtures[0].workspace===fixtures[1].workspace||fixtures[0].owner===fixtures[1].owner)throw new Error('Fixtures must have separate owners and workspaces')
