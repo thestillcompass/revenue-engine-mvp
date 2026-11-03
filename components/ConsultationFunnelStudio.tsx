@@ -19,7 +19,30 @@ export function ConsultationFunnelStudio(){
   return ()=>{active=false}
  },[])
  async function saveDraft(){setSaving(true);setNotice('');try{const r=await fetch('/api/funnel-draft',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify(draft)});if(!r.ok)throw Error('Could not save draft');setDirty(false);setNotice('Draft saved to your workspace.')}catch{setNotice('Save failed. Your edits remain on this page only.')}finally{setSaving(false)}}
- async function togglePublication(){if(publishing||loading||dirty)return;setPublishing(true);setNotice('');try{const method=publication?.status==='published'?'DELETE':'POST';const r=await fetch('/api/funnel-publication',{method});const data=await r.json();if(!r.ok)throw new Error(data.error||'Publication failed');setPublication(method==='DELETE'?{slug:publication!.slug,status:'draft'}:{slug:data.slug,status:'published'});setNotice(method==='DELETE'?'Funnel unpublished. Public link now returns not found.':'Published the latest saved draft.')}catch(e){setNotice(e instanceof Error?e.message:'Publication failed')}finally{setPublishing(false)}}
+ async function publishDraft(){
+  if(publishing||loading||saving||dirty)return
+  setPublishing(true);setNotice('')
+  try{
+   const r=await fetch('/api/funnel-publication',{method:'POST'})
+   const data=await r.json()
+   if(!r.ok)throw new Error(data.error||'Publication failed')
+   setPublication({slug:data.slug,status:'published'})
+   setNotice('Saved draft published as version '+data.version+'. Open the public page to check your changes.')
+  }catch(e){setNotice(e instanceof Error?e.message:'Publication failed')}
+  finally{setPublishing(false)}
+ }
+ async function unpublishFunnel(){
+  if(publishing||loading)return
+  setPublishing(true);setNotice('')
+  try{
+   const r=await fetch('/api/funnel-publication',{method:'DELETE'})
+   const data=await r.json()
+   if(!r.ok)throw new Error(data.error||'Unpublishing failed')
+   setPublication(current=>current?{...current,status:'draft'}:null)
+   setNotice('Funnel unpublished. Its public page is now unavailable.')
+  }catch(e){setNotice(e instanceof Error?e.message:'Unpublishing failed')}
+  finally{setPublishing(false)}
+ }
  const change=(key:keyof Funnel,value:string)=>{setDirty(true);setDraft(p=>({...p,[key]:value}))}
  const fields: {key:keyof Funnel;label:string;max:number;multiline?:boolean}[]=[
   {key:'name',label:'Internal funnel name',max:80},
@@ -32,7 +55,7 @@ export function ConsultationFunnelStudio(){
  return <div className="v3-studio">
   <section className="card v3-editor"><div className="eyebrow">Step 1 · Create</div><h2>Make it yours</h2><p className="muted">Edit the text, then try your funnel preview. Edits remain private until you save and publish a new version.</p>
    <div className="stack">{fields.map(f=><div className="field" key={f.key}><label htmlFor={'f-'+f.key}>{f.label}</label>{f.multiline?<textarea id={'f-'+f.key} className="textarea" maxLength={f.max} value={draft[f.key]} onChange={e=>change(f.key,e.target.value)}/>:<input id={'f-'+f.key} className="input" maxLength={f.max} value={draft[f.key]} onChange={e=>change(f.key,e.target.value)}/>}</div>)}</div>
-   <div className="hero-actions"><button className="btn primary" type="button" disabled={saving||loading} onClick={saveDraft}>{saving?'Saving…':'Save draft'}</button><button className="btn secondary" type="button" onClick={()=>{setDraft(initial);setDirty(true);setNotice('Example restored locally. Click Save draft to keep it.') }}>Reset example</button></div><div className="hero-actions"><button className="btn secondary" type="button" disabled={publishing||loading||saving||dirty} onClick={togglePublication}>{publishing?'Working…':publication?.status==='published'?'Unpublish funnel':'Publish saved draft'}</button>{publication?.status==='published'&&<a className="btn secondary" href={'/f/'+publication.slug} target="_blank" rel="noopener noreferrer">View published page</a>}</div><p aria-live="polite" className="muted">{dirty?'Unsaved changes. Save before publishing. ':''}{loading?'Loading saved draft…':notice||'Changes are not saved automatically.'}</p>
+   <div className="hero-actions"><button className="btn primary" type="button" disabled={saving||loading} onClick={saveDraft}>{saving?'Saving…':'Save draft'}</button><button className="btn secondary" type="button" onClick={()=>{setDraft(initial);setDirty(true);setNotice('Example restored locally. Click Save draft to keep it.') }}>Reset example</button></div><div className="hero-actions"><button className="btn secondary" type="button" disabled={publishing||loading||saving||dirty} onClick={publishDraft}>{publishing?'Working…':publication?.status==='published'?'Publish changes':'Publish saved draft'}</button>{publication?.status==='published'&&<><a className="btn secondary" href={'/f/'+publication.slug} target="_blank" rel="noopener noreferrer">View published page</a><button className="btn secondary" type="button" disabled={publishing||loading} onClick={unpublishFunnel}>Unpublish funnel</button></>}</div><p aria-live="polite" className="muted">{dirty?'Unsaved changes. Save before publishing. ':''}{loading?'Loading saved draft…':notice||'Changes are not saved automatically.'}</p>
   </section>
   <section className="card v3-preview-wrap"><div className="v3-preview-head"><div><div className="eyebrow">Step 2 · Preview</div><h2>See what visitors see</h2></div><div className="v3-preview-toggle" aria-label="Preview width"><button className={'btn '+(view==='desktop'?'primary':'secondary')} type="button" onClick={()=>setView('desktop')} aria-pressed={view==='desktop'}>Desktop</button><button className={'btn '+(view==='mobile'?'primary':'secondary')} type="button" onClick={()=>setView('mobile')} aria-pressed={view==='mobile'}>Mobile</button></div></div>
   <div className={'v3-preview '+(view==='mobile'?'v3-preview-mobile':'')}>
