@@ -22,6 +22,7 @@ export function PublicEnquiryForm({slug,question}:{slug:string;question:string})
  const [status,setStatus]=useState<'idle'|'busy'|'done'>('idle')
  const [verification,setVerification]=useState<'loading'|'ready'|'failed'>(sitekey?'loading':'failed')
  const [error,setError]=useState('')
+ const [rateLimited,setRateLimited]=useState(false)
  const [scriptRetry,setScriptRetry]=useState(0)
 
  function initializeTurnstile(){
@@ -71,16 +72,25 @@ export function PublicEnquiryForm({slug,question}:{slug:string;question:string})
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({name,email,answer,consent,website,turnstileToken:tokenRef.current})
    })
+   if(r.status===429){
+    setRateLimited(true)
+    setError('Too many enquiry attempts have been made from this network. Please try again after approximately 10 minutes. Your answers are still here.')
+    setStatus('idle')
+    tokenRef.current=''
+    setVerification('failed')
+    return
+   }
    if(!r.ok){
-    const body=await r.json().catch(()=>({error:'Submission failed'}))
-    throw new Error(body.error||'Submission failed')
+    const body=await r.json().catch(()=>({error:''}))
+    if(r.status===503)throw new Error('Enquiries are temporarily unavailable. Your answers are still here; please try again later.')
+    if(r.status===403)throw new Error('Security verification was unsuccessful. Please complete the check again.')
+    throw new Error(typeof body.error==='string'&&body.error?body.error:'Submission could not be completed. Please try again.')
    }
    setStatus('done')
   }catch(e){
    setError(e instanceof Error?e.message:'Please try again')
    setStatus('idle')
-   if(sitekey)retryVerification()
-   if(sitekey)setError(e instanceof Error?e.message:'Please try again')
+   if(sitekey){retryVerification();setError(e instanceof Error?e.message:'Please try again')}
   }
  }
  if(status==='done')return <div role="status" className="card"><h3>Thank you. Your enquiry was received.</h3><p>The business can review your details and follow up.</p></div>
@@ -95,9 +105,9 @@ export function PublicEnquiryForm({slug,question}:{slug:string;question:string})
    <Script key={scriptRetry} src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" strategy="afterInteractive" onReady={initializeTurnstile} onError={()=>setVerification('failed')}/>
    <div ref={widgetContainer}/>
    {verification==='loading'&&<p role="status">Checking your connection securely…</p>}
-   {verification==='failed'&&<div role="alert"><p>Security verification could not complete. Check your connection or browser extensions, then retry. Your answers are saved on this page.</p><button className="btn" type="button" onClick={retryVerification}>Retry security check</button></div>}
+   {verification==='failed'&&!rateLimited&&<div role="alert"><p>Security verification could not complete. Check your connection or browser extensions, then retry. Your answers are saved on this page.</p><button className="btn" type="button" onClick={retryVerification}>Retry security check</button></div>}
   </>}
   {error&&<p role="alert" className="error">{error}</p>}
-  <button className="btn primary" type="submit" disabled={status==='busy'||Boolean(sitekey&&verification!=='ready')}>{status==='busy'?'Submitting…':'Send enquiry'}</button>
+  <button className="btn primary" type="submit" disabled={rateLimited||status==='busy'||Boolean(sitekey&&verification!=='ready')}>{status==='busy'?'Submitting…':'Send enquiry'}</button>
  </form>
 }
