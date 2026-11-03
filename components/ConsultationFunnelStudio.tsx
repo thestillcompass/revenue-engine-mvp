@@ -12,6 +12,9 @@ export function ConsultationFunnelStudio(){
  const [publication,setPublication]=useState<{slug:string;status:string}|null>(null)
  const [publishing,setPublishing]=useState(false)
  const [dirty,setDirty]=useState(false)
+ const [starterSector,setStarterSector]=useState<'consulting'|'agency'|'services'>('consulting')
+ const [starterGoal,setStarterGoal]=useState<'consultation'|'enquiry'>('consultation')
+ const [starterBusiness,setStarterBusiness]=useState('')
  useEffect(()=>{
   let active=true
   fetch('/api/funnel-draft',{cache:'no-store'}).then(async r=>{if(!r.ok)throw new Error('Draft loading is unavailable');return r.json()}).then(data=>{if(active&&data.draft)setDraft(data.draft)}).catch(()=>{if(active)setNotice('Draft storage is not configured yet. Changes here are temporary.')}).finally(()=>{if(active)setLoading(false)})
@@ -44,6 +47,25 @@ export function ConsultationFunnelStudio(){
   finally{setPublishing(false)}
  }
  const change=(key:keyof Funnel,value:string)=>{setDirty(true);setDraft(p=>({...p,[key]:value}))}
+ function applyStarter(){
+  if(loading||saving||publishing)return
+  // Intentionally explicit: starter templates never save or publish automatically.
+  const business=(starterBusiness.trim()||draft.business||'Your Business').slice(0,80)
+  const descriptions={
+   consulting:'Tell us about the challenges your organisation is facing so we can explore whether our consulting services are a fit.',
+   agency:'Share what you want to improve in your marketing or operations so we can discuss a suitable approach.',
+   services:'Tell us what you need and we can discuss whether our services are the right fit.'
+  }
+  const questions={
+   consulting:'What is the main business challenge you want to address?',
+   agency:'What result are you looking to achieve?',
+   services:'What kind of support are you looking for?'
+  }
+  const headline=starterGoal==='consultation'?'Explore the right next step for your business.':'Tell us what you need help with.'
+  setDraft(p=>({...p,business,headline,description:descriptions[starterSector],question:questions[starterSector],cta:starterGoal==='consultation'?'Request a Consultation':'Send an Enquiry'}))
+  setDirty(true)
+  setNotice('Starter copy added to the editor only. Review and edit it before saving; your published funnel has not changed.')
+ }
  const fields: {key:keyof Funnel;label:string;max:number;multiline?:boolean}[]=[
   {key:'name',label:'Internal funnel name',max:80},
   {key:'business',label:'Business name',max:80},
@@ -54,6 +76,14 @@ export function ConsultationFunnelStudio(){
  ]
  return <div className="v3-studio">
   <section className="card v3-editor"><div className="eyebrow">Step 1 · Create</div><h2>Make it yours</h2><p className="muted">Edit the text, then try your funnel preview. Edits remain private until you save and publish a new version.</p>
+   <div className="stack" style={{marginBottom:24}}>
+    <h3>Start with a guided example</h3>
+    <p className="muted">Choose your business type and desired outcome. This creates editable starting copy, not AI-generated content. Applying it replaces the six-field editor copy locally, but does not save or publish.</p>
+    <div className="field"><label htmlFor="v2-starter-business">Business name</label><input id="v2-starter-business" className="input" maxLength={80} placeholder={draft.business} value={starterBusiness} onChange={e=>setStarterBusiness(e.target.value)}/></div>
+    <div className="field"><label htmlFor="v2-starter-sector">Business type</label><select id="v2-starter-sector" className="input" value={starterSector} onChange={e=>setStarterSector(e.target.value as typeof starterSector)}><option value="consulting">Consulting</option><option value="agency">Marketing or creative agency</option><option value="services">Other professional services</option></select></div>
+    <div className="field"><label htmlFor="v2-starter-goal">Funnel objective</label><select id="v2-starter-goal" className="input" value={starterGoal} onChange={e=>setStarterGoal(e.target.value as typeof starterGoal)}><option value="consultation">Consultation request</option><option value="enquiry">General enquiry</option></select></div>
+    <button className="btn secondary" type="button" disabled={loading||saving||publishing} onClick={applyStarter}>Apply starting copy to editor</button>
+   </div>
    <div className="stack">{fields.map(f=><div className="field" key={f.key}><label htmlFor={'f-'+f.key}>{f.label}</label>{f.multiline?<textarea id={'f-'+f.key} className="textarea" maxLength={f.max} value={draft[f.key]} onChange={e=>change(f.key,e.target.value)}/>:<input id={'f-'+f.key} className="input" maxLength={f.max} value={draft[f.key]} onChange={e=>change(f.key,e.target.value)}/>}</div>)}</div>
    <div className="hero-actions"><button className="btn primary" type="button" disabled={saving||loading} onClick={saveDraft}>{saving?'Saving…':'Save draft'}</button><button className="btn secondary" type="button" onClick={()=>{setDraft(initial);setDirty(true);setNotice('Example restored locally. Click Save draft to keep it.') }}>Reset example</button></div><div className="hero-actions"><button className="btn secondary" type="button" disabled={publishing||loading||saving||dirty} onClick={publishDraft}>{publishing?'Working…':publication?.status==='published'?'Publish changes':'Publish saved draft'}</button>{publication?.status==='published'&&<><a className="btn secondary" href={'/f/'+publication.slug} target="_blank" rel="noopener noreferrer">View published page</a><button className="btn secondary" type="button" disabled={publishing||loading} onClick={unpublishFunnel}>Unpublish funnel</button></>}</div><p aria-live="polite" className="muted">{dirty?'Unsaved changes. Save before publishing. ':''}{loading?'Loading saved draft…':notice||'Changes are not saved automatically.'}</p>
   </section>
