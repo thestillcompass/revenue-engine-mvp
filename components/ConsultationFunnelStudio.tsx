@@ -6,7 +6,6 @@ const initial:Funnel={name:'Consultation funnel',business:'Your Business',headli
 export function ConsultationFunnelStudio(){
  const [draft,setDraft]=useState<Funnel>(initial)
  const [view,setView]=useState<'desktop'|'mobile'>('desktop')
- const [showQuestions,setShowQuestions]=useState(false)
  const [loading,setLoading]=useState(true)
  const [saving,setSaving]=useState(false)
  const [notice,setNotice]=useState('')
@@ -33,10 +32,26 @@ export function ConsultationFunnelStudio(){
  return <div className="v3-studio">
   <section className="card v3-editor"><div className="eyebrow">Step 1 · Create</div><h2>Make it yours</h2><p className="muted">Edit the text, then try your funnel preview. Edits remain private until you save and publish a new version.</p>
    <div className="stack">{fields.map(f=><div className="field" key={f.key}><label htmlFor={'f-'+f.key}>{f.label}</label>{f.multiline?<textarea id={'f-'+f.key} className="textarea" maxLength={f.max} value={draft[f.key]} onChange={e=>change(f.key,e.target.value)}/>:<input id={'f-'+f.key} className="input" maxLength={f.max} value={draft[f.key]} onChange={e=>change(f.key,e.target.value)}/>}</div>)}</div>
-   <div className="hero-actions"><button className="btn primary" type="button" disabled={saving||loading} onClick={saveDraft}>{saving?'Saving…':'Save draft'}</button><button className="btn secondary" type="button" onClick={()=>{setDraft(initial);setShowQuestions(false);setDirty(true);setNotice('Example restored locally. Click Save draft to keep it.') }}>Reset example</button></div><div className="hero-actions"><button className="btn secondary" type="button" disabled={publishing||loading||saving||dirty} onClick={togglePublication}>{publishing?'Working…':publication?.status==='published'?'Unpublish funnel':'Publish saved draft'}</button>{publication?.status==='published'&&<a className="btn secondary" href={'/f/'+publication.slug} target="_blank" rel="noopener noreferrer">View published page</a>}</div><p aria-live="polite" className="muted">{dirty?'Unsaved changes. Save before publishing. ':''}{loading?'Loading saved draft…':notice||'Changes are not saved automatically.'}</p>
+   <div className="hero-actions"><button className="btn primary" type="button" disabled={saving||loading} onClick={saveDraft}>{saving?'Saving…':'Save draft'}</button><button className="btn secondary" type="button" onClick={()=>{setDraft(initial);setDirty(true);setNotice('Example restored locally. Click Save draft to keep it.') }}>Reset example</button></div><div className="hero-actions"><button className="btn secondary" type="button" disabled={publishing||loading||saving||dirty} onClick={togglePublication}>{publishing?'Working…':publication?.status==='published'?'Unpublish funnel':'Publish saved draft'}</button>{publication?.status==='published'&&<a className="btn secondary" href={'/f/'+publication.slug} target="_blank" rel="noopener noreferrer">View published page</a>}</div><p aria-live="polite" className="muted">{dirty?'Unsaved changes. Save before publishing. ':''}{loading?'Loading saved draft…':notice||'Changes are not saved automatically.'}</p>
   </section>
   <section className="card v3-preview-wrap"><div className="v3-preview-head"><div><div className="eyebrow">Step 2 · Preview</div><h2>See what visitors see</h2></div><div className="v3-preview-toggle" aria-label="Preview width"><button className={'btn '+(view==='desktop'?'primary':'secondary')} type="button" onClick={()=>setView('desktop')} aria-pressed={view==='desktop'}>Desktop</button><button className={'btn '+(view==='mobile'?'primary':'secondary')} type="button" onClick={()=>setView('mobile')} aria-pressed={view==='mobile'}>Mobile</button></div></div>
-  <div className={'v3-preview '+(view==='mobile'?'v3-preview-mobile':'')}><div className="v3-preview-brand">{draft.business||'Your business'}</div>{!showQuestions?<div className="v3-preview-content"><span className="v3-tag">Let's get started</span><h2>{draft.headline||'Your headline goes here'}</h2><p>{draft.description||'Add a short description of your offer.'}</p><button type="button" className="btn primary" onClick={()=>setShowQuestions(true)}>{draft.cta||'Get started'} →</button></div>:<div className="v3-preview-content"><span className="v3-tag">A quick question</span><h2>{draft.question||'Tell us about your needs'}</h2><label htmlFor="v3-demo-answer">Your answer</label><textarea id="v3-demo-answer" className="textarea" placeholder="This is a preview only; no answer is stored."/><p className="muted">Preview only — this form does not submit or save information.</p><button type="button" className="btn secondary" onClick={()=>setShowQuestions(false)}>← Back to introduction</button></div>}</div>
-  <div className="v3-preview-note">Preview is illustrative. Published funnels can collect enquiries; AI generation is not available yet.</div></section>
+  <div className={'v3-preview '+(view==='mobile'?'v3-preview-mobile':'')}>
+   <div className="v3-preview-brand">{draft.business||'Your business'}</div>
+   <div className="v3-preview-content">
+    <span className="v3-tag">Get in touch</span>
+    <h2>{draft.headline||'Your headline goes here'}</h2>
+    <p>{draft.description||'Add a short description of your offer.'}</p>
+    <div className="stack" style={{marginTop:28}}>
+     <h3>{draft.question||'What would you like help with?'}</h3>
+     <div className="field"><label htmlFor="v2-preview-name">Your name</label><input id="v2-preview-name" className="input" placeholder="Your name" disabled/></div>
+     <div className="field"><label htmlFor="v2-preview-email">Your email</label><input id="v2-preview-email" className="input" type="email" placeholder="you@example.com" disabled/></div>
+     <div className="field"><label htmlFor="v2-preview-answer">Your answer</label><textarea id="v2-preview-answer" className="textarea" placeholder="Visitor response" disabled/></div>
+     <label style={{display:'flex',alignItems:'start',gap:9}}><input type="checkbox" disabled/><span>I agree that this business may use my information to respond to this enquiry. This is not consent to marketing messages.</span></label>
+     <p className="muted">A security check appears on the published page.</p>
+     <button type="button" className="btn primary" disabled>{draft.cta||'Send enquiry'}</button>
+    </div>
+   </div>
+  </div>
+  <div className="v3-preview-note">Read-only preview of the public enquiry layout. No leads are submitted here. Publish the saved draft to update your public funnel.</div></section>
  </div>
 }
