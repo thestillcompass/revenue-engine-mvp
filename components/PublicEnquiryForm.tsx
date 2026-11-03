@@ -9,7 +9,7 @@ type TurnstileAPI = {
 }
 type TurnstileWindow = Window & { turnstile?: TurnstileAPI }
 
-export function PublicEnquiryForm({slug,question}:{slug:string;question:string}){
+export function PublicEnquiryForm({slug,question,cta}:{slug:string;question:string;cta?:string}){
  const sitekey=process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
  const widgetContainer=useRef<HTMLDivElement>(null)
  const widgetId=useRef<string|null>(null)
@@ -108,6 +108,6 @@ export function PublicEnquiryForm({slug,question}:{slug:string;question:string})
    {verification==='failed'&&!rateLimited&&<div role="alert"><p>Security verification could not complete. Check your connection or browser extensions, then retry. Your answers are saved on this page.</p><button className="btn" type="button" onClick={retryVerification}>Retry security check</button></div>}
   </>}
   {error&&<p role="alert" className="error">{error}</p>}
-  <button className="btn primary" type="submit" disabled={rateLimited||status==='busy'||Boolean(sitekey&&verification!=='ready')}>{status==='busy'?'Submitting…':'Send enquiry'}</button>
+  <button className="btn primary" type="submit" disabled={rateLimited||status==='busy'||Boolean(sitekey&&verification!=='ready')}>{status==='busy'?'Submitting…':cta?.trim()||'Send enquiry'}</button>
  </form>
 }
