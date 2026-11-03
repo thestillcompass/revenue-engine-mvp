@@ -10,5 +10,5 @@ export default async function PublicFunnel({params}:{params:Promise<{slug:string
  const {data,error}=await supabase.rpc('get_published_funnel',{requested_slug:slug})
  if(error||!data?.length)notFound()
  const c=data[0].content as Record<string,string>
- return <main className="container" style={{maxWidth:780,padding:'48px 16px'}}><div className="brand"><span className="brandmark">R</span>{c.business}</div><section className="card" style={{marginTop:48}}><div className="eyebrow">Get in touch</div><h1 style={{fontSize:'clamp(32px,5vw,56px)',lineHeight:1.1}}>{c.headline}</h1><p className="lead">{c.description}</p><PublicEnquiryForm slug={slug} question={c.question}/></section></main>
+ return <main className="container" style={{maxWidth:780,padding:'48px 16px'}}><div className="brand"><span className="brandmark">R</span>{c.business}</div><section className="card" style={{marginTop:48}}><div className="eyebrow">Get in touch</div><h1 style={{fontSize:'clamp(32px,5vw,56px)',lineHeight:1.1}}>{c.headline}</h1><p className="lead">{c.description}</p><PublicEnquiryForm slug={slug} question={c.question} cta={c.cta}/></section></main>
 }
