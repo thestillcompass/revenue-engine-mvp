@@ -19,6 +19,8 @@ jobs:
       - run: npm install --no-audit --no-fund
       - name: Recommendation consistency
         run: npm run test:consistency
+      - name: AI funnel contract
+        run: npm run test:ai-contract
       - name: Build
         id: build
         shell: bash
