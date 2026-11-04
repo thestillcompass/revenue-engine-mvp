@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test:consistency": "tsx tests/recommendation-consistency.ts"
+    "test:consistency": "tsx tests/recommendation-consistency.ts",
+    "test:ai-contract": "tsx tests/funnel-ai-contract.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.7.0",
