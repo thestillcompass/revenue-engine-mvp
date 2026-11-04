@@ -18,8 +18,13 @@ export function ConsultationFunnelStudio(){
  const [starterAudience,setStarterAudience]=useState('')
  const [starterService,setStarterService]=useState('')
  const [starterOutcome,setStarterOutcome]=useState('')
+ const [aiAvailable,setAiAvailable]=useState(false)
+ const [aiBusy,setAiBusy]=useState(false)
+ const [aiSuggestion,setAiSuggestion]=useState<Funnel|null>(null)
+ const [aiNotice,setAiNotice]=useState('')
  useEffect(()=>{
   let active=true
+  fetch('/api/funnel-ai',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(v=>{if(active)setAiAvailable(v?.enabled===true)}).catch(()=>{})
   fetch('/api/funnel-draft',{cache:'no-store'}).then(async r=>{if(!r.ok)throw new Error('Draft loading is unavailable');return r.json()}).then(data=>{if(active&&data.draft)setDraft(data.draft)}).catch(()=>{if(active)setNotice('Draft storage is not configured yet. Changes here are temporary.')}).finally(()=>{if(active)setLoading(false)})
   fetch('/api/funnel-publication',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(v=>{if(active&&v?.funnel)setPublication(v.funnel)}).catch(()=>{})
   return ()=>{active=false}
@@ -92,6 +97,32 @@ export function ConsultationFunnelStudio(){
   setDirty(true)
   setNotice('Starter copy added to the editor only. Review and edit it before saving; your published funnel has not changed.')
  }
+ async function generateAiSuggestion(){
+  if(aiBusy||loading||saving||publishing||!aiAvailable)return
+  setAiBusy(true);setAiNotice('');setAiSuggestion(null)
+  try{
+   const response=await fetch('/api/funnel-ai',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+     business:starterBusiness.trim()||draft.business,
+     sector:starterSector,objective:starterGoal,
+     audience:starterAudience,service:starterService,desiredOutcome:starterOutcome
+    })
+   })
+   const value=await response.json().catch(()=>({error:'AI generation failed'}))
+   if(!response.ok)throw new Error(typeof value.error==='string'?value.error:'AI generation failed')
+   setAiSuggestion(value.suggestion as Funnel)
+   setAiNotice('AI suggestion created. Review the wording and claims. Nothing has been applied or saved.')
+  }catch(e){setAiNotice(e instanceof Error?e.message:'AI generation failed')}
+  finally{setAiBusy(false)}
+ }
+ function applyAiSuggestion(){
+  if(!aiSuggestion||loading||saving||publishing)return
+  setDraft(aiSuggestion);setDirty(true);setAiSuggestion(null)
+  setNotice('AI suggestion applied to your unsaved editor. Review it before saving or publishing.')
+  setAiNotice('')
+ }
  const fields: {key:keyof Funnel;label:string;max:number;multiline?:boolean}[]=[
   {key:'name',label:'Internal funnel name',max:80},
   {key:'business',label:'Business name',max:80},
@@ -112,6 +143,25 @@ export function ConsultationFunnelStudio(){
     <div className="field"><label htmlFor="v2-starter-service">What service do you offer? (optional)</label><input id="v2-starter-service" className="input" maxLength={90} placeholder="e.g. operational strategy consulting" value={starterService} onChange={e=>setStarterService(e.target.value)}/></div>
     <div className="field"><label htmlFor="v2-starter-outcome">What result does your customer want? (optional)</label><input id="v2-starter-outcome" className="input" maxLength={70} placeholder="e.g. improve team accountability" value={starterOutcome} onChange={e=>setStarterOutcome(e.target.value)}/></div>
     <button className="btn secondary" type="button" disabled={loading||saving||publishing} onClick={applyStarter}>Apply starting copy to editor</button>
+    <div className="card" style={{marginTop:14}}>
+     <h3>AI-assisted copy suggestion</h3>
+     <p className="muted">Enter your business name, audience, service and desired outcome above. AI can propose copy, but never edits or publishes your funnel without approval.</p>
+     <button className="btn secondary" type="button" disabled={!aiAvailable||aiBusy||loading||saving||publishing||!(starterBusiness.trim()||draft.business.trim())||!starterAudience.trim()||!starterService.trim()||!starterOutcome.trim()} onClick={generateAiSuggestion}>{aiBusy?'Generating suggestion…':'Generate AI suggestion'}</button>
+     {!aiAvailable&&<p className="muted">AI generation is not enabled in this staging environment. The guided example remains available.</p>}
+     {aiNotice&&<p role="status" className="muted">{aiNotice}</p>}
+     {aiSuggestion&&<div className="stack" style={{marginTop:16}}>
+      <h3>Review generated suggestion</h3>
+      <p className="muted">The suggestion does not replace your existing draft until you choose Apply.</p>
+      <div><strong>Headline:</strong> {aiSuggestion.headline}</div>
+      <div><strong>Description:</strong> {aiSuggestion.description}</div>
+      <div><strong>Qualification question:</strong> {aiSuggestion.question}</div>
+      <div><strong>Button:</strong> {aiSuggestion.cta}</div>
+      <div className="hero-actions">
+       <button className="btn primary" type="button" onClick={applyAiSuggestion}>Apply suggestion to editor</button>
+       <button className="btn secondary" type="button" onClick={()=>{setAiSuggestion(null);setAiNotice('Suggestion discarded. Your editor is unchanged.')}}>Discard suggestion</button>
+      </div>
+     </div>}
+    </div>
    </div>
    <div className="stack">{fields.map(f=><div className="field" key={f.key}><label htmlFor={'f-'+f.key}>{f.label}</label>{f.multiline?<textarea id={'f-'+f.key} className="textarea" maxLength={f.max} value={draft[f.key]} onChange={e=>change(f.key,e.target.value)}/>:<input id={'f-'+f.key} className="input" maxLength={f.max} value={draft[f.key]} onChange={e=>change(f.key,e.target.value)}/>}</div>)}</div>
    <div className="card" style={{marginTop:18,marginBottom:18}}>
