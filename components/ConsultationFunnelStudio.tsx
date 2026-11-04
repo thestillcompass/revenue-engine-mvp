@@ -15,6 +15,9 @@ export function ConsultationFunnelStudio(){
  const [starterSector,setStarterSector]=useState<'consulting'|'agency'|'services'>('consulting')
  const [starterGoal,setStarterGoal]=useState<'consultation'|'enquiry'>('consultation')
  const [starterBusiness,setStarterBusiness]=useState('')
+ const [starterAudience,setStarterAudience]=useState('')
+ const [starterService,setStarterService]=useState('')
+ const [starterOutcome,setStarterOutcome]=useState('')
  useEffect(()=>{
   let active=true
   fetch('/api/funnel-draft',{cache:'no-store'}).then(async r=>{if(!r.ok)throw new Error('Draft loading is unavailable');return r.json()}).then(data=>{if(active&&data.draft)setDraft(data.draft)}).catch(()=>{if(active)setNotice('Draft storage is not configured yet. Changes here are temporary.')}).finally(()=>{if(active)setLoading(false)})
@@ -61,8 +64,23 @@ export function ConsultationFunnelStudio(){
    agency:'What result are you looking to achieve?',
    services:'What kind of support are you looking for?'
   }
-  const headline=starterGoal==='consultation'?'Explore the right next step for your business.':'Tell us what you need help with.'
-  setDraft(p=>({...p,business,headline,description:descriptions[starterSector],question:questions[starterSector],cta:starterGoal==='consultation'?'Request a Consultation':'Send an Enquiry'}))
+  const audience=starterAudience.trim().replace(/\s+/g,' ')
+  const service=starterService.trim().replace(/\\s+/g,' ')
+  const outcome=starterOutcome.trim().replace(/\\s+/g,' ')
+  const headline=outcome
+   ?('Looking to '+outcome.replace(/[.!?]+$/,'')+'? Let’s discuss what comes next.').slice(0,140)
+   :starterGoal==='consultation'?'Explore the right next step for your business.':'Tell us what you need help with.'
+  const audiencePart=audience?'For '+audience+', ':''
+  const servicePart=service?'we offer '+service+'. ':''
+  const closing=starterGoal==='consultation'
+   ?'Tell us what you need so we can assess whether a consultation is appropriate.'
+   :'Share your requirements so we can assess whether we can help.'
+  const personalized=audiencePart+servicePart+closing
+  const description=(audience||service)?personalized.slice(0,280):descriptions[starterSector]
+  const question=service
+   ?('What would you most like help with regarding '+service+'?').slice(0,160)
+   :questions[starterSector]
+  setDraft(p=>({...p,business,headline,description,question,cta:starterGoal==='consultation'?'Request a Consultation':'Send an Enquiry'}))
   setDirty(true)
   setNotice('Starter copy added to the editor only. Review and edit it before saving; your published funnel has not changed.')
  }
@@ -78,10 +96,13 @@ export function ConsultationFunnelStudio(){
   <section className="card v3-editor"><div className="eyebrow">Step 1 · Create</div><h2>Make it yours</h2><p className="muted">Edit the text, then try your funnel preview. Edits remain private until you save and publish a new version.</p>
    <div className="stack" style={{marginBottom:24}}>
     <h3>Start with a guided example</h3>
-    <p className="muted">Choose your business type and desired outcome. This creates editable starting copy, not AI-generated content. Applying it replaces the six-field editor copy locally, but does not save or publish.</p>
+    <p className="muted">Choose your business type and goal, then optionally describe your customers and offer. This creates editable starting copy, not AI-generated content. Applying it replaces the six-field editor copy locally, but does not save or publish.</p>
     <div className="field"><label htmlFor="v2-starter-business">Business name</label><input id="v2-starter-business" className="input" maxLength={80} placeholder={draft.business} value={starterBusiness} onChange={e=>setStarterBusiness(e.target.value)}/></div>
     <div className="field"><label htmlFor="v2-starter-sector">Business type</label><select id="v2-starter-sector" className="input" value={starterSector} onChange={e=>setStarterSector(e.target.value as typeof starterSector)}><option value="consulting">Consulting</option><option value="agency">Marketing or creative agency</option><option value="services">Other professional services</option></select></div>
     <div className="field"><label htmlFor="v2-starter-goal">Funnel objective</label><select id="v2-starter-goal" className="input" value={starterGoal} onChange={e=>setStarterGoal(e.target.value as typeof starterGoal)}><option value="consultation">Consultation request</option><option value="enquiry">General enquiry</option></select></div>
+    <div className="field"><label htmlFor="v2-starter-audience">Who is this for? (optional)</label><input id="v2-starter-audience" className="input" maxLength={80} placeholder="e.g. founder-led small businesses" value={starterAudience} onChange={e=>setStarterAudience(e.target.value)}/></div>
+    <div className="field"><label htmlFor="v2-starter-service">What service do you offer? (optional)</label><input id="v2-starter-service" className="input" maxLength={90} placeholder="e.g. operational strategy consulting" value={starterService} onChange={e=>setStarterService(e.target.value)}/></div>
+    <div className="field"><label htmlFor="v2-starter-outcome">What result does your customer want? (optional)</label><input id="v2-starter-outcome" className="input" maxLength={70} placeholder="e.g. improve team accountability" value={starterOutcome} onChange={e=>setStarterOutcome(e.target.value)}/></div>
     <button className="btn secondary" type="button" disabled={loading||saving||publishing} onClick={applyStarter}>Apply starting copy to editor</button>
    </div>
    <div className="stack">{fields.map(f=><div className="field" key={f.key}><label htmlFor={'f-'+f.key}>{f.label}</label>{f.multiline?<textarea id={'f-'+f.key} className="textarea" maxLength={f.max} value={draft[f.key]} onChange={e=>change(f.key,e.target.value)}/>:<input id={'f-'+f.key} className="input" maxLength={f.max} value={draft[f.key]} onChange={e=>change(f.key,e.target.value)}/>}</div>)}</div>
