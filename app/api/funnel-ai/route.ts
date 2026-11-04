@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 import {
   AI_FUNNEL_GENERATION_POLICY,
   AI_MAX_OUTPUT_TOKENS,
@@ -32,7 +33,7 @@ export async function POST(req: Request) {
   const db = await createClient()
   const { data: { user }, error: authError } = await db.auth.getUser()
   if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers: noStore })
-  if (!process.env.OPENAI_API_KEY) {
+  if (!process.env.OPENAI_API_KEY || !process.env.SUPABASE_SECRET_KEY || !process.env.NEXT_PUBLIC_SUPABASE_URL) {
     return NextResponse.json({ error: 'AI generation is not configured for this staging workspace. Use the guided example instead.' }, { status: 503, headers: noStore })
   }
   const text = await req.text()
@@ -45,7 +46,8 @@ export async function POST(req: Request) {
   if (!brief) return NextResponse.json({ error: 'Complete the business, audience, service and desired outcome fields.' }, { status: 400, headers: noStore })
 
   // Single transactional quota reservation before provider spend; fail closed if quota storage fails.
-  const { data: allowed, error: quotaError } = await db.rpc('consume_ai_funnel_generation_quota')
+  const admin = createAdminClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SECRET_KEY!, { auth: { persistSession: false, autoRefreshToken: false } })
+  const { data: allowed, error: quotaError } = await admin.rpc('consume_ai_funnel_generation_quota', { p_user: user.id })
   if (quotaError) {
     console.error('AI quota reservation failed:', quotaError.code)
     return NextResponse.json({ error: 'AI generation is temporarily unavailable.' }, { status: 503, headers: noStore })
