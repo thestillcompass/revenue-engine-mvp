@@ -65,20 +65,28 @@ export function ConsultationFunnelStudio(){
    services:'What kind of support are you looking for?'
   }
   const audience=starterAudience.trim().replace(/\s+/g,' ')
-  const service=starterService.trim().replace(/\\s+/g,' ')
-  const outcome=starterOutcome.trim().replace(/\\s+/g,' ')
+  const service=starterService.trim().replace(/\s+/g,' ')
+  const outcome=starterOutcome.trim().replace(/\s+/g,' ')
+  // Leave room for finishing punctuation instead of truncating generated sentences.
+  const compact=(input:string,max:number)=>{
+   const clean=input.trim().replace(/\s+/g,' ')
+   if(clean.length<=max)return clean
+   const prefix=clean.slice(0,max-1)
+   const lastSpace=prefix.lastIndexOf(' ')
+   return (lastSpace>max*0.55?prefix.slice(0,lastSpace):prefix).replace(/[,.!?;:\s]+$/,'')+'…'
+  }
   const headline=outcome
-   ?('Looking to '+outcome.replace(/[.!?]+$/,'')+'? Let’s discuss what comes next.').slice(0,140)
+   ?compact('Looking to '+outcome.replace(/[.!?]+$/,'')+'? Let’s discuss what comes next.',140)
    :starterGoal==='consultation'?'Explore the right next step for your business.':'Tell us what you need help with.'
   const audiencePart=audience?'For '+audience+', ':''
-  const servicePart=service?'we offer '+service+'. ':''
+  const servicePart=service?(audience?'we offer ':'We offer ')+service+'. ':''
   const closing=starterGoal==='consultation'
    ?'Tell us what you need so we can assess whether a consultation is appropriate.'
    :'Share your requirements so we can assess whether we can help.'
   const personalized=audiencePart+servicePart+closing
-  const description=(audience||service)?personalized.slice(0,280):descriptions[starterSector]
+  const description=(audience||service)?compact(personalized,280):descriptions[starterSector]
   const question=service
-   ?('What would you most like help with regarding '+service+'?').slice(0,160)
+   ?compact('What would you most like help with regarding '+service+'?',160)
    :questions[starterSector]
   setDraft(p=>({...p,business,headline,description,question,cta:starterGoal==='consultation'?'Request a Consultation':'Send an Enquiry'}))
   setDirty(true)
@@ -106,6 +114,16 @@ export function ConsultationFunnelStudio(){
     <button className="btn secondary" type="button" disabled={loading||saving||publishing} onClick={applyStarter}>Apply starting copy to editor</button>
    </div>
    <div className="stack">{fields.map(f=><div className="field" key={f.key}><label htmlFor={'f-'+f.key}>{f.label}</label>{f.multiline?<textarea id={'f-'+f.key} className="textarea" maxLength={f.max} value={draft[f.key]} onChange={e=>change(f.key,e.target.value)}/>:<input id={'f-'+f.key} className="input" maxLength={f.max} value={draft[f.key]} onChange={e=>change(f.key,e.target.value)}/>}</div>)}</div>
+   <div className="card" style={{marginTop:18,marginBottom:18}}>
+    <h3>Before you publish — review your copy</h3>
+    <p className="muted">Templates are starting points. Check that these statements are true and specific to your business.</p>
+    <ul>
+     <li>Does the headline describe a customer problem or desired outcome?</li>
+     <li>Does the description clearly identify who you help and what you offer?</li>
+     <li>Does the qualification question help you decide whether this enquiry is a fit?</li>
+     <li>Does the button accurately describe the next step? A consultation request is not an instant booking.</li>
+    </ul>
+   </div>
    <div className="hero-actions"><button className="btn primary" type="button" disabled={saving||loading} onClick={saveDraft}>{saving?'Saving…':'Save draft'}</button><button className="btn secondary" type="button" onClick={()=>{setDraft(initial);setDirty(true);setNotice('Example restored locally. Click Save draft to keep it.') }}>Reset example</button></div><div className="hero-actions"><button className="btn secondary" type="button" disabled={publishing||loading||saving||dirty} onClick={publishDraft}>{publishing?'Working…':publication?.status==='published'?'Publish changes':'Publish saved draft'}</button>{publication?.status==='published'&&<><a className="btn secondary" href={'/f/'+publication.slug} target="_blank" rel="noopener noreferrer">View published page</a><button className="btn secondary" type="button" disabled={publishing||loading} onClick={unpublishFunnel}>Unpublish funnel</button></>}</div><p aria-live="polite" className="muted">{dirty?'Unsaved changes. Save before publishing. ':''}{loading?'Loading saved draft…':notice||'Changes are not saved automatically.'}</p>
   </section>
   <section className="card v3-preview-wrap"><div className="v3-preview-head"><div><div className="eyebrow">Step 2 · Preview</div><h2>See what visitors see</h2></div><div className="v3-preview-toggle" aria-label="Preview width"><button className={'btn '+(view==='desktop'?'primary':'secondary')} type="button" onClick={()=>setView('desktop')} aria-pressed={view==='desktop'}>Desktop</button><button className={'btn '+(view==='mobile'?'primary':'secondary')} type="button" onClick={()=>setView('mobile')} aria-pressed={view==='mobile'}>Mobile</button></div></div>
